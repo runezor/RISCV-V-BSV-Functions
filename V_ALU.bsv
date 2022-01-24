@@ -1,8 +1,8 @@
 package ALU;
 	import Vector :: * ;
-	import Decoder :: * ;
+	import V_Decoder :: * ;
 
-	interface ALU;
+	interface V_ALU;
 		method Bit#(64) compute(Bit#(64) reg1, Bit#(64) reg2, V_arith_instr inst_type);
 	endinterface
 
@@ -40,7 +40,6 @@ package ALU;
 		Int#(n) c_i = satMinus(Sat_Bound,a_i,b_i);
 		return pack(c_i);
 	endfunction
-
 
 	function Bit#(64) computeFunc(Bit#(64) reg1, Bit#(64) reg2, function Bit#(vsize) f(Bit#(vsize) a, Bit#(vsize) b))
 	provisos(Div#(64,vsize,v_n), Add#(a__, vsize, 64), Bits#(Vector::Vector#(v_n, Bit#(vsize)), 64));

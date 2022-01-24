@@ -1,4 +1,4 @@
-package Decoder;
+package V_Decoder;
 	typedef enum {Op_v,Load_fp,Store_fp} Opcode;
 	typedef enum {Op_add = 0, Op_sub = 2, Op_mult = 5, Op_sat_add = 33, Op_sat_sub = 35} V_arith_op deriving (Eq, Bits);
 	typedef enum {Bit_16 = 16, Bit_32 = 32} V_size deriving(Eq, Bits);
@@ -43,19 +43,11 @@ package Decoder;
 		V_store_instr Store;
 		V_invalid_instr Invalid;
 	} V_instr deriving (Bits);
-	
-	interface Decoder;
-		method Bit#(1) isValid();
-		method V_instr decode(Bit#(32) inst);
-	endinterface
 
-	(* synthesize *)
-	module mkDecoder(Decoder);
-		Reg#(Bit#(1)) valid <- mkReg(0);
-		method Bit#(1) isValid();
-			return valid;
-		endmethod
-		method V_instr decode(Bit#(32) inst);
+	export V_instr;
+	export v_decode;
+
+	function v_decode(Bit#(32) inst);
 			let opcode = inst[6:0];
 			let opcode_1 = inst[4:2];
 			let opcode_2 = inst[6:5];
@@ -95,6 +87,5 @@ package Decoder;
 				instr = tagged Arith V_arith_instr {op: v_op, v_size: Bit_16, encoding: v_enc, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
 
 			return instr;
-		endmethod
-	endmodule
+	endfunction
 endpackage
