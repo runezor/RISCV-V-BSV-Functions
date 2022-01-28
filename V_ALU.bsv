@@ -3,7 +3,7 @@ package ALU;
 	import V_Decoder :: * ;
 
 	interface V_ALU;
-		method Bit#(64) compute(Bit#(64) reg1, Bit#(64) reg2, V_arith_instr inst_type);
+		method Bit#(64) vector_compute(Bit#(64) reg1, Bit#(64) reg2, V_arith_instr inst_type);
 	endinterface
 
 	function Bit#(n) add (Bit#(n) a, Bit#(n) b);
@@ -86,7 +86,7 @@ package ALU;
 	//Use should pattern match on enum in decoder ideally! That way we can add more sizes easily
 	(* synthesize *)
 	module mkALU(ALU);
-		method Bit#(64) compute(Bit#(64) reg1, Bit#(64) reg2, V_arith_instr inst_type);
+		method Bit#(64) vector_compute(Bit#(64) reg1, Bit#(64) reg2, V_arith_instr inst_type);
 			//Todo: Automate me
 			case (inst_type.v_size) matches
 				tagged Bit_16: begin
