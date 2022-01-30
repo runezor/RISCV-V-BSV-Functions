@@ -44,14 +44,7 @@ package V_Decoder;
 		V_invalid_instr Invalid;
 	} V_instr deriving (Bits);
 
-	export V_instr;
 	export v_decode;
-	export V_arith_instr;
-	export V_size;
-	export V_arith_encoding;
-	export Register_addr;
-	export V_payload;
-	export V_arith_op;
 
 	function V_instr v_decode(Bit#(32) inst);
 			let opcode = inst[6:0];
