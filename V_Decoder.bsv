@@ -46,6 +46,7 @@ package V_Decoder;
 
 	export V_instr;
 	export v_decode;
+	export V_arith_instr;
 
 	function V_instr v_decode(Bit#(32) inst);
 			let opcode = inst[6:0];
