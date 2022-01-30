@@ -38,13 +38,13 @@ package V_Decoder;
 	} V_store_instr deriving (Bits);
 
 	typedef union tagged {
-		V_arith_instr Arith;
-		V_load_instr Load;
-		V_store_instr Store;
-		V_invalid_instr Invalid;
+		V_arith_instr Arith_V_instr;
+		V_load_instr Load_V_instr;
+		V_store_instr Store_V_instr;
+		V_invalid_instr Invalid_V_instr;
 	} V_instr deriving (Bits);
 
-	export v_decode;
+	export V_Decoder::*;
 
 	function V_instr v_decode(Bit#(32) inst);
 			let opcode = inst[6:0];
@@ -61,10 +61,10 @@ package V_Decoder;
 			let store_fp = (opcode_1 == 1 && opcode_2 == 1);
 			let op_v = (opcode == 87);
 
-			V_instr instr = tagged Invalid V_invalid_instr {};
+			V_instr instr = tagged Invalid_V_instr V_invalid_instr {};
 
-			V_invalid_instr invalid = V_invalid_instr {};
-			instr = tagged Invalid invalid;
+			//V_invalid_instr invalid = V_invalid_instr {};
+			//instr = tagged Invalid_V_instr invalid;
 
 			V_arith_encoding v_enc = unpack(funct3);
 			V_arith_op v_op = unpack(funct6);
@@ -79,11 +79,11 @@ package V_Decoder;
 
 
 			if (load_fp)
-				instr = tagged Load V_load_instr {location: 0};
+				instr = tagged Load_V_instr V_load_instr {location: 0};
 			if (store_fp)
-				instr = tagged Store V_store_instr {location: 0};
+				instr = tagged Store_V_instr V_store_instr {location: 0};
 			if (op_v)
-				instr = tagged Arith V_arith_instr {op: v_op, v_size: Bit_16, encoding: v_enc, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
+				instr = tagged Arith_V_instr V_arith_instr {op: v_op, v_size: Bit_16, encoding: v_enc, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
 
 			return instr;
 	endfunction
