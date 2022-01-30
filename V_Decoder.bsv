@@ -47,6 +47,10 @@ package V_Decoder;
 	export V_instr;
 	export v_decode;
 	export V_arith_instr;
+	export V_size;
+	export V_arith_encoding;
+	export Register_addr;
+	export V_payload;
 
 	function V_instr v_decode(Bit#(32) inst);
 			let opcode = inst[6:0];
