@@ -1,7 +1,9 @@
 package V_Decoder;
 	typedef enum {Op_v,Load_fp,Store_fp} Opcode;
-	typedef enum {Op_add = 0, Op_sub = 2, Op_mult = 37, Op_sat_add = 33, Op_sat_sub = 35} V_arith_op deriving (Eq, Bits);
-	typedef enum {Bit_8 = 0, Bit_16 = 1, Bit_32 = 2, Bit_64 = 3, Bit_128=4} V_size deriving(Eq, Bits);
+	typedef enum {Op_add = 0, Op_sub = 2, Op_sat_addu = 32, Op_sat_subu = 34} V_arith_op_i1 deriving (Eq, Bits);
+	typedef enum {Op_mult = 37} V_arith_op_i2 deriving (Eq, Bits);
+	typedef enum {Op_invalid = 63} V_arith_op_fp deriving (Eq, Bits);
+	typedef enum {Bit_8 = 0, Bit_16 = 1, Bit_32 = 2, Bit_64 = 3, Bit_128=4} V_el_size deriving(Eq, Bits);
 	typedef enum {OP_VV = 0, OP_FVV = 1, OP_MVV = 2, OP_IVI = 3, OP_IVX = 4, OP_FVF = 5, OP_MVX = 6, OP_CFG = 7} V_funct3 deriving(Eq, Bits);
 	
 	typedef struct {
@@ -13,13 +15,19 @@ package V_Decoder;
 	} Immediate deriving (Eq, Bits);
 
 	typedef union tagged {
-		Register_addr Payload_addr;
+		Register_addr Payload_addr_GPR;
+		Register_addr Payload_addr_vec;
 		Immediate Payload_immediate;
 	} V_payload deriving (Eq, Bits);
 
+	typedef union tagged {
+		V_arith_op_i1 V_arith_op_i1;
+		V_arith_op_i2 V_arith_op_i2;
+		V_arith_op_fp V_arith_op_fp;
+	} V_arith_op deriving (Eq, Bits);
+
 	typedef struct {
 		V_arith_op op;
-		V_funct3 encoding;
 		V_payload load1;
 		Register_addr load2;
 		Register_addr dest;
@@ -28,7 +36,7 @@ package V_Decoder;
 	//NOT A COMPLETE DECODING
 	typedef struct {
 		Bit#(5) dest;
-		V_size vsew;
+		V_el_size vsew;
 	} V_vsetvl_instr deriving (Bits);
 
 	typedef struct {
@@ -54,11 +62,8 @@ package V_Decoder;
 
 	export V_Decoder::*;
 
-	function Bit#(10) get_size_of_sew(V_size w);
-			return (8<<pack(w));
-	endfunction
-
 	function V_instr v_decode(Bit#(32) inst);
+			//For standard format
 			let opcode = inst[6:0];
 			let dest = inst[11:7];
 			let vs2 = inst[24:20];
@@ -66,8 +71,11 @@ package V_Decoder;
 			let vm = inst[25];
 			let funct6 = inst[31:26];
 			let funct3 = inst[14:12];
-
-			let load_fp = (opcode == 7) ;
+			//For vsetvli
+			let zimm = inst[30:20];			
+			let vsew = zimm[4:2];
+			//For memory
+			let load_fp = (opcode == 7) ;	
 			let store_fp = (opcode == 39);
 			let op_v = (opcode == 87);
 
@@ -79,22 +87,33 @@ package V_Decoder;
 				instr = tagged Load_V_instr V_load_instr {rs1: vs1, dest: dest};
 			if (store_fp)
 				instr = tagged Store_V_instr V_store_instr {rs1: vs1, vs3: dest};
-			if (op_v) begin
-				if (v_funct3 == OP_CFG) begin
-					let zimm = inst[30:20];
-					let vsew = zimm[4:2];
+			if (op_v) begin				
+				V_arith_op v_op = ?;
+				if (v_funct3 == OP_VV || v_funct3 == OP_IVX || v_funct3 == OP_IVI)
+					v_op = tagged V_arith_op_i1 unpack(funct6);
+				if (v_funct3 == OP_MVV || v_funct3 == OP_MVX)
+					v_op = tagged V_arith_op_i2 unpack(funct6);
+				if (v_funct3 == OP_FVV || v_funct3 == OP_FVF)
+					v_op = tagged V_arith_op_fp unpack(funct6);
+					
+				Bool scalar = (v_funct3 == OP_IVX || v_funct3 == OP_IVI || v_funct3 == OP_MVX || v_funct3 == OP_FVF);
+
+				V_payload vs1_payload;
+
+				if (v_funct3 == OP_IVI)
+					vs1_payload = tagged Payload_immediate Immediate {value: vs1};
+				else if (v_funct3==OP_VV || v_funct3==OP_MVV)
+					vs1_payload = tagged Payload_addr_vec Register_addr {addr: vs1};
+				else
+					vs1_payload = tagged Payload_addr_GPR Register_addr {addr: vs1};
+
+				Register_addr vs2_addr = Register_addr{addr: vs2};
+				Register_addr dest_addr = Register_addr{addr: dest}; 
+
+				if (v_funct3 == OP_CFG)
 					instr = tagged Vsetvl_V_instr V_vsetvl_instr {dest: dest, vsew: unpack(vsew)};
-				end else begin
-					V_arith_op v_op = unpack(funct6);
-					V_payload vs1_payload;
-					if (v_funct3 == OP_IVI)
-						vs1_payload = tagged Payload_immediate Immediate {value: vs1};
-					else
-						vs1_payload = tagged Payload_addr Register_addr {addr: vs1};
-					Register_addr vs2_addr = Register_addr{addr: vs2};
-					Register_addr dest_addr = Register_addr{addr: dest}; //TODO: Rename encoding
-					instr = tagged Arith_V_instr V_arith_instr {op: v_op, encoding: v_funct3, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
-				end
+				else
+					instr = tagged Arith_V_instr V_arith_instr {op: v_op, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
 			end
 			return instr;
 	endfunction
