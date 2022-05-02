@@ -1,5 +1,6 @@
 import V_Decoder::*;
 import V_ALU::*;
+import Vector :: * ;
 
 (* synthesize *)
 module mkTests();
@@ -22,21 +23,36 @@ module mkTests();
 	rule readFromList( state==1 );
 
         int i <- $fgetc( file );
-        int v1_1 <- $fgetc( file );
-        int v1_2 <- $fgetc( file );
-        int v2_1 <- $fgetc( file );
-        int v2_2 <- $fgetc( file );
-        int res_1 <- $fgetc( file );
-        int res_2 <- $fgetc( file );
+
+        Vector#(4, Bit#(8)) ts_vec = unpack(0);
+        for(Integer j=0; j<4; j=j+1) begin
+            int temp <-$fgetc( file );
+            ts_vec[j] =  truncate(pack(temp));
+        end
+		instr <= pack(ts_vec);
         
-        if ( i != -1)
-            begin
-                instr <= truncate( pack(i) );
-                val1 <=  {pack(v1_1),pack(v1_2)};
-                val2 <= {pack(v2_1),pack(v2_2)};
-                result <= {pack(res_1),pack(res_2)};
-            end
-        else // error
+        Vector#(8, Bit#(8)) t_vec = unpack(0);
+        for(Integer j=0; j<8; j=j+1) begin
+            int temp <-$fgetc( file );
+            t_vec[j] =  truncate(pack(temp));
+        end
+		val1 <= pack(t_vec);
+
+        for(Integer j=0; j<8; j=j+1) begin
+            int temp <-$fgetc( file );
+            t_vec[j] =  truncate(pack(temp));
+        end
+		val2 <= pack(t_vec);
+
+        for(Integer j=0; j<8; j=j+1) begin
+            int temp <-$fgetc( file );
+            t_vec[j] =  truncate(pack(temp));
+        end
+		result <= pack(t_vec);
+
+              
+        
+        if ( i == -1)
             begin
                 $display("Could not get from");
                 $fclose(file);
@@ -46,10 +62,14 @@ module mkTests();
     endrule
 
 	rule runInstruction( state==1 && instr!=0 );
-        $display("Instruction: %b", instr);
-        $display("Val 1: %b", val1);
-        $display("Val 2: %b", val2);
-        $display("Result: %b", result);
+        $display("Instruction: %h", instr);
+        $display("Val 1: %h %", val1);
+        $display("Val 2: %h", val2);
+        $display("Result: %h", result);
+        $display("Instruction binary: %b", instr);
+        $display("Val 1 binary: %b / %", val1);
+        $display("Val 2 binary: %b / %", val2);
+        $display("Result binary: %b", result);
     endrule
 
 endmodule

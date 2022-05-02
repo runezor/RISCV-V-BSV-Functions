@@ -37,6 +37,7 @@ package V_Decoder;
 	typedef struct {
 		Bit#(5) dest;
 		V_el_size vsew;
+		Bit#(5) rs1;
 	} V_vsetvl_instr deriving (Bits);
 
 	typedef struct {
@@ -62,6 +63,28 @@ package V_Decoder;
 
 	export V_Decoder::*;
 
+
+	function Bool instr_is_signed(V_arith_instr instr);
+		Bool s = False;
+		case (instr.op) matches
+			tagged V_arith_op_i1 .i1: begin
+				case (i1) matches
+                	tagged Op_add:
+                		s = True;
+                	tagged Op_sub:
+                		s = True;
+				endcase
+			end 
+			tagged V_arith_op_i2 .i2: begin
+				case (i2) matches
+                	tagged Op_mult:
+                		s = True;
+				endcase
+			end 
+		endcase
+		return s;
+	endfunction
+
 	function V_instr v_decode(Bit#(32) inst);
 			//For standard format
 			let opcode = inst[6:0];
@@ -75,8 +98,8 @@ package V_Decoder;
 			let zimm = inst[30:20];			
 			let vsew = zimm[4:2];
 			//For memory
-			let load_fp = (opcode == 7) ;	
-			let store_fp = (opcode == 39);
+			let load_fp = (opcode == 7) &&   (funct3 == 0 || funct3 == 5 || funct3 == 6 || funct3 == 7);	
+			let store_fp = (opcode == 39) && (funct3 == 0 || funct3 == 5 || funct3 == 6 || funct3 == 7);
 			let op_v = (opcode == 87);
 
 			V_instr instr = tagged Invalid_V_instr V_invalid_instr {};
@@ -111,7 +134,7 @@ package V_Decoder;
 				Register_addr dest_addr = Register_addr{addr: dest}; 
 
 				if (v_funct3 == OP_CFG)
-					instr = tagged Vsetvl_V_instr V_vsetvl_instr {dest: dest, vsew: unpack(vsew)};
+					instr = tagged Vsetvl_V_instr V_vsetvl_instr {dest: dest, vsew: unpack(vsew), rs1: vs1};
 				else
 					instr = tagged Arith_V_instr V_arith_instr {op: v_op, load1:vs1_payload, load2:vs2_addr,dest: dest_addr};
 			end

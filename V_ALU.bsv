@@ -1,4 +1,4 @@
-`define VLEN 64
+`define VLEN 128
 
 package V_ALU;
 	import Vector :: * ;
@@ -61,27 +61,6 @@ package V_ALU;
 		return pack(v);
 	endfunction
 
-	function Bool instr_is_signed(V_arith_instr instr);
-		Bool s = False;
-		case (instr.op) matches
-			tagged V_arith_op_i1 .i1: begin
-				case (i1) matches
-                	tagged Op_add:
-                		s = True;
-                	tagged Op_sub:
-                		s = True;
-				endcase
-			end 
-			tagged V_arith_op_i2 .i2: begin
-				case (i2) matches
-                	tagged Op_mult:
-                		s = True;
-				endcase
-			end 
-		endcase
-		return s;
-	endfunction
-
 	function Bit#(`VLEN) compute_vec_at_size(Bit#(`VLEN) reg1, Bit#(`VLEN) reg2, V_arith_instr instr, Bit#(sew) _) //Todo, could fetch imm from inst
 	provisos(Div#(`VLEN,sew,v_n), Add#(a__, sew, `VLEN), Mul#(TDiv#(`VLEN, sew), sew, `VLEN), Add#(b__, 5, sew));
 		function Bit#(sew) func(Bit#(sew) a, Bit#(sew) b) = add(a,b);
@@ -111,7 +90,7 @@ package V_ALU;
 
 		//Scalar input logic
 		if (instr.load1 matches tagged Payload_immediate .p) begin
-			Int#(5) imm_s = unpack(p.value); //Only does signed atm
+			Int#(5) imm_s = unpack(p.value);
 			Bit#(sew) imm_ex = pack(instr_is_signed(instr)?signExtend(imm_s):zeroExtend(imm_s));
 			val1 = scalar_to_vec(imm_ex);
 		end
