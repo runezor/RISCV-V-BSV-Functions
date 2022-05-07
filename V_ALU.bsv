@@ -1,4 +1,4 @@
-`define VLEN 128
+`define VLEN 64
 
 package V_ALU;
 	import Vector :: * ;
