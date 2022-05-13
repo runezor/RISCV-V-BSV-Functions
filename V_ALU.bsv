@@ -87,18 +87,19 @@ package V_ALU;
 		endcase
 
 		let val1 = reg1;
+		case (instr.load1) matches //Handles scalar input logic
+			tagged Payload_immediate .p: begin
+				Int#(5) imm_s = unpack(p.value);
+				Bit#(sew) imm_ex = pack(instr_is_signed(instr)?
+					signExtend(imm_s):zeroExtend(imm_s));
+				val1 = scalar_to_vec(imm_ex);
+			end
+			tagged Payload_addr_GPR .*: begin
+				Bit#(sew) rs1_t = truncate(reg1);
+				val1 = scalar_to_vec(rs1_t);
+			end
+		endcase
 
-		//Scalar input logic
-		if (instr.load1 matches tagged Payload_immediate .p) begin
-			Int#(5) imm_s = unpack(p.value);
-			Bit#(sew) imm_ex = pack(instr_is_signed(instr)?signExtend(imm_s):zeroExtend(imm_s));
-			val1 = scalar_to_vec(imm_ex);
-		end
-		if (instr.load1 matches tagged Payload_addr_GPR .*) begin
-			Bit#(sew) rs1_t = truncate(reg1);
-			val1 = scalar_to_vec(rs1_t);
-		end
-		
 		return computeFunc(reg2, val1, func);
 	endfunction
 
